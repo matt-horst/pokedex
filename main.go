@@ -1,16 +1,22 @@
 package main
 
 import (
-	"fmt"
-	"strings"
 	"bufio"
+	"fmt"
 	"os"
+	"strings"
+	"internal/pokeapi"
 )
 
 type cliCommand struct {
 	name string
 	description string
-	callback func() error
+	callback func(*config) error
+}
+
+type config struct {
+	Next string
+	Previous string
 }
 
 func cleanInput(text string) []string {
@@ -19,9 +25,47 @@ func cleanInput(text string) []string {
 	return strings.Fields(text)
 }
 
-func commandExit() error {
+func commandHelp(_ *config) error {
+	fmt.Println("Welcome to the Pokedex!")
+	fmt.Print(usage)
+	return nil
+}
+
+func commandExit(_ *config) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
+
+	return nil
+}
+
+func commandMap(config *config) error {
+	list, err := pokeapi.GetLocationsList(config.Next)
+	if err != nil {
+		return err
+	}
+
+	for _, name := range list.Locations {
+		fmt.Println(name)
+	}
+
+	config.Next = list.Next
+	config.Previous = list.Previous
+
+	return nil
+}
+
+func commandMapb(config *config) error {
+	list, err := pokeapi.GetLocationsList(config.Previous)
+	if err != nil {
+		return err
+	}
+
+	for _, name := range list.Locations {
+		fmt.Println(name)
+	}
+
+	config.Next = list.Next
+	config.Previous = list.Previous
 
 	return nil
 }
@@ -32,6 +76,16 @@ var registry = map[string]cliCommand{
 		description: "Displays a help message",
 		callback: commandHelp,
 	},
+	"map": {
+		name: "map",
+		description: "Displays a list of the next 20 locations",
+		callback: commandMap,
+	},
+	"mapb": {
+		name: "mapb",
+		description: "Displays a list of the previous 20 locations",
+		callback: commandMapb,
+	},
 	"exit": {
 		name: "exit",
 		description: "Exit the Pokedex",
@@ -40,13 +94,6 @@ var registry = map[string]cliCommand{
 }
 
 var usage string
-
-func commandHelp() error {
-	fmt.Println("Welcome to the Pokedex!")
-	fmt.Print(usage)
-	return nil
-}
-
 func generateUsage() string {
 	usage := "Usage:\n\n"
 	for _, cmd := range registry {
@@ -60,6 +107,7 @@ func generateUsage() string {
 func main() {
 	usage = generateUsage()
 	scanner := bufio.NewScanner(os.Stdin)
+	config := config{}
 
 	for {
 		fmt.Print("Pokedex > ")
@@ -70,7 +118,7 @@ func main() {
 		cleanInput := cleanInput(rawInput)
 
 		if cmd, ok := registry[cleanInput[0]]; ok {
-			err := cmd.callback()
+			err := cmd.callback(&config)
 			if err != nil {
 				fmt.Println(err)
 			} 
