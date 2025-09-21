@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 	"github.com/matt-horst/pokeapi"
 	"github.com/matt-horst/pokecache"
 )
@@ -40,14 +41,24 @@ func commandExit(_ *config) error {
 }
 
 func commandMap(config *config) error {
+	val, ok := cache.Get(config.Next)
+	if ok {
+		fmt.Print(string(val))
+		return nil
+	}
+
 	list, err := pokeapi.GetLocationsList(config.Next)
 	if err != nil {
 		return err
 	}
 
+	output := ""
 	for _, name := range list.Locations {
-		fmt.Println(name)
+		output += name + "\n"
 	}
+
+	cache.Add(config.Next, []byte(output))
+	fmt.Print(output)
 
 	config.Next = list.Next
 	config.Previous = list.Previous
@@ -56,14 +67,24 @@ func commandMap(config *config) error {
 }
 
 func commandMapb(config *config) error {
+	val, ok := cache.Get(config.Previous)
+	if ok {
+		fmt.Print(string(val))
+		return nil
+	}
+
 	list, err := pokeapi.GetLocationsList(config.Previous)
 	if err != nil {
 		return err
 	}
 
+	output := ""
 	for _, name := range list.Locations {
-		fmt.Println(name)
+		output += name + "\n"
 	}
+
+	cache.Add(config.Previous, []byte(output))
+	fmt.Print(output)
 
 	config.Next = list.Next
 	config.Previous = list.Previous
@@ -94,7 +115,7 @@ var registry = map[string]cliCommand{
 	},
 }
 
-var cache pokecache.Cache
+var cache = pokecache.NewCache(5 * time.Second)
 
 var usage string
 func generateUsage() string {
