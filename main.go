@@ -13,7 +13,7 @@ import (
 type cliCommand struct {
 	name string
 	description string
-	callback func(*config) error
+	callback func(*config, []string) error
 }
 
 type config struct {
@@ -27,20 +27,20 @@ func cleanInput(text string) []string {
 	return strings.Fields(text)
 }
 
-func commandHelp(_ *config) error {
+func commandHelp(_ *config, _ []string) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Print(usage)
 	return nil
 }
 
-func commandExit(_ *config) error {
+func commandExit(_ *config, _ []string) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 
 	return nil
 }
 
-func commandMap(config *config) error {
+func commandMap(config *config, _ []string) error {
 	val, ok := cache.Get(config.Next)
 	if ok {
 		fmt.Print(string(val))
@@ -66,7 +66,7 @@ func commandMap(config *config) error {
 	return nil
 }
 
-func commandMapb(config *config) error {
+func commandMapb(config *config, _ []string) error {
 	val, ok := cache.Get(config.Previous)
 	if ok {
 		fmt.Print(string(val))
@@ -92,6 +92,32 @@ func commandMapb(config *config) error {
 	return nil
 }
 
+func commandExplore(_ *config, params []string) error {
+	name := params[0]
+	key := fmt.Sprintf("explore-%v", name)
+	val, ok := cache.Get(key)
+	if ok {
+		fmt.Print(string(val))
+		return nil
+	}
+
+	pokemon, err := pokeapi.GetPokemonList(name)
+	if err != nil {
+		return err
+	}
+
+	output := fmt.Sprintf("Exploring %v...\n", name)
+	for _, p := range pokemon {
+		output += fmt.Sprintf(" - %v\n", p)
+	}
+
+	cache.Add(key, []byte(output))
+
+	fmt.Print(output)
+
+	return nil
+}
+
 var registry = map[string]cliCommand{
 	"help": {
 		name: "help",
@@ -107,6 +133,11 @@ var registry = map[string]cliCommand{
 		name: "mapb",
 		description: "Displays a list of the previous 20 locations",
 		callback: commandMapb,
+	},
+	"explore": {
+		name: "explore",
+		description: "Displays a list of pokemon at the given location",
+		callback: commandExplore,
 	},
 	"exit": {
 		name: "exit",
@@ -142,7 +173,7 @@ func main() {
 		cleanInput := cleanInput(rawInput)
 
 		if cmd, ok := registry[cleanInput[0]]; ok {
-			err := cmd.callback(&config)
+			err := cmd.callback(&config, cleanInput[1:])
 			if err != nil {
 				fmt.Println(err)
 			} 

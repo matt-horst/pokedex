@@ -1,9 +1,10 @@
 package pokeapi
 
 import (
-	"net/http"
-	"io"
 	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 )
 
 type LocationsList struct {
@@ -51,4 +52,38 @@ func GetLocationsList(url string) (LocationsList, error) {
 	}
 
 	return lst, nil
+}
+
+func GetPokemonList(name string) ([]string, error) {
+	url := fmt.Sprintf("https://pokeapi.co/api/v2/location-area/%v", name)
+
+	res, err := http.Get(url)
+	if err != nil {
+		return []string{}, err
+	}
+
+	body, err := io.ReadAll(res.Body)
+	defer res.Body.Close()
+	if err != nil {
+		return []string{}, err
+	}
+
+	data := struct {
+		Pokemon_encounters []struct {
+			Pokemon struct {
+				Name string
+			}
+		}
+	} {}
+
+	if err := json.Unmarshal(body, &data); err != nil {
+		return []string{}, err
+	}
+
+	pokemon := []string{}
+	for _, p := range data.Pokemon_encounters {
+		pokemon = append(pokemon, p.Pokemon.Name)
+	}
+
+	return pokemon, nil
 }
