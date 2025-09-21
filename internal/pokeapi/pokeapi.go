@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"github.com/matt-horst/pokecache"
+	"time"
 )
 
 type LocationsList struct {
@@ -13,34 +15,39 @@ type LocationsList struct {
 	Previous string
 }
 
+var cache *pokecache.Cache = pokecache.NewCache(5 * time.Second)
+
 func GetLocationsList(url string) (LocationsList, error) {
 	if url == "" {
 		url = "https://pokeapi.co/api/v2/location-area/"
 	}
 
-	res, err := http.Get(url)
+	body, ok := cache.Get(url)
+	if !ok {
+		res, err := http.Get(url)
 
-	if err != nil {
-		return LocationsList{}, err
-	} 
+		if err != nil {
+			return LocationsList{}, err
+		} 
 
-	body, err := io.ReadAll(res.Body)
-	defer res.Body.Close()
-	if err != nil {
-		return LocationsList{}, err
+		body, err = io.ReadAll(res.Body)
+		defer res.Body.Close()
+		if err != nil {
+			return LocationsList{}, err
+		}
+
+		cache.Add(url, body)
 	}
 
 	data := struct {
-		Count int
 		Next string
 		Previous string
 		Results []struct {
 			Name string
-			Url string
 		}
 	}{}
 
-	err = json.Unmarshal(body, &data)
+	err := json.Unmarshal(body, &data)
 	if err != nil {
 		return LocationsList{}, err
 	}
@@ -57,16 +64,22 @@ func GetLocationsList(url string) (LocationsList, error) {
 func GetPokemonList(name string) ([]string, error) {
 	url := fmt.Sprintf("https://pokeapi.co/api/v2/location-area/%v", name)
 
-	res, err := http.Get(url)
-	if err != nil {
-		return []string{}, err
+	body, ok := cache.Get(url)
+	if !ok {
+		res, err := http.Get(url)
+		if err != nil {
+			return []string{}, err
+		}
+
+		body, err = io.ReadAll(res.Body)
+		defer res.Body.Close()
+		if err != nil {
+			return []string{}, err
+		}
+
+		cache.Add(url, body)
 	}
 
-	body, err := io.ReadAll(res.Body)
-	defer res.Body.Close()
-	if err != nil {
-		return []string{}, err
-	}
 
 	data := struct {
 		Pokemon_encounters []struct {

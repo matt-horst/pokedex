@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 	"github.com/matt-horst/pokeapi"
-	"github.com/matt-horst/pokecache"
 )
 
 type cliCommand struct {
@@ -41,24 +40,14 @@ func commandExit(_ *config, _ []string) error {
 }
 
 func commandMap(config *config, _ []string) error {
-	val, ok := cache.Get(config.Next)
-	if ok {
-		fmt.Print(string(val))
-		return nil
-	}
-
 	list, err := pokeapi.GetLocationsList(config.Next)
 	if err != nil {
 		return err
 	}
 
-	output := ""
 	for _, name := range list.Locations {
-		output += name + "\n"
+		fmt.Println(name)
 	}
-
-	cache.Add(config.Next, []byte(output))
-	fmt.Print(output)
 
 	config.Next = list.Next
 	config.Previous = list.Previous
@@ -67,24 +56,14 @@ func commandMap(config *config, _ []string) error {
 }
 
 func commandMapb(config *config, _ []string) error {
-	val, ok := cache.Get(config.Previous)
-	if ok {
-		fmt.Print(string(val))
-		return nil
-	}
-
 	list, err := pokeapi.GetLocationsList(config.Previous)
 	if err != nil {
 		return err
 	}
 
-	output := ""
 	for _, name := range list.Locations {
-		output += name + "\n"
+		fmt.Println(name)
 	}
-
-	cache.Add(config.Previous, []byte(output))
-	fmt.Print(output)
 
 	config.Next = list.Next
 	config.Previous = list.Previous
@@ -94,26 +73,29 @@ func commandMapb(config *config, _ []string) error {
 
 func commandExplore(_ *config, params []string) error {
 	name := params[0]
-	key := fmt.Sprintf("explore-%v", name)
-	val, ok := cache.Get(key)
-	if ok {
-		fmt.Print(string(val))
-		return nil
-	}
 
 	pokemon, err := pokeapi.GetPokemonList(name)
 	if err != nil {
 		return err
 	}
 
-	output := fmt.Sprintf("Exploring %v...\n", name)
+	fmt.Printf("Exploring %v...\n", name)
 	for _, p := range pokemon {
-		output += fmt.Sprintf(" - %v\n", p)
+		fmt.Printf(" - %v\n", p)
 	}
 
-	cache.Add(key, []byte(output))
+	return nil
+}
 
-	fmt.Print(output)
+func commandCatch(_ *config, params []string) error {
+	name := params[0]
+
+	_, err := pokeapi.GetPokemon(name)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Throwing a Pokeball at %v...\n", name)
 
 	return nil
 }
@@ -146,7 +128,10 @@ var registry = map[string]cliCommand{
 	},
 }
 
-var cache = pokecache.NewCache(5 * time.Second)
+type Pokemon struct {
+	name string
+}
+var pokedex map[string]Pokemon = make(map[string]Pokemon)
 
 var usage string
 func generateUsage() string {
@@ -157,7 +142,6 @@ func generateUsage() string {
 
 	return usage
 }
-
 
 func main() {
 	usage = generateUsage()
