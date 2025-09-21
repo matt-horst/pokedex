@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 	"time"
-
 	"github.com/matt-horst/pokeapi"
 )
 
@@ -105,9 +104,36 @@ func commandCatch(_ *config, params []string) error {
 	if v > p.BaseExperience {
 		// Catch
 		fmt.Printf("%v was caught!\n", name)
+		pokedex[name] = p
 	} else {
 		// Miss
 		fmt.Printf("%v escaped!\n", name)
+	}
+
+	return nil
+}
+
+func commandInspect(_ *config, params []string) error {
+	name := params[0]
+
+	p, ok := pokedex[name]
+	if !ok {
+		fmt.Printf("You must catch a %v before inspecting\n", name)
+		return nil
+	}
+
+	fmt.Printf("Name: %v\n", p.Name)
+	fmt.Printf("Height: %v\n", p.Height)
+	fmt.Printf("Weight: %v\n", p.Weight)
+
+	fmt.Println("Stats:")
+	for _, s := range p.Stats {
+		fmt.Printf(" -%v: %v\n", s.Name, s.Val)
+	}
+
+	fmt.Println("Types:")
+	for _, t := range p.Types {
+		fmt.Printf(" - %v\n", t)
 	}
 
 	return nil
@@ -139,6 +165,11 @@ var registry = map[string]cliCommand{
 		description: "Attempts to catch a pokemon",
 		callback: commandCatch,
 	},
+	"inspect": {
+		name: "inspect",
+		description: "Displays information about pokemon in pokedex",
+		callback: commandInspect,
+	},
 	"exit": {
 		name: "exit",
 		description: "Exit the Pokedex",
@@ -146,10 +177,7 @@ var registry = map[string]cliCommand{
 	},
 }
 
-type Pokemon struct {
-	name string
-}
-var pokedex map[string]Pokemon = make(map[string]Pokemon)
+var pokedex map[string]pokeapi.PokemonInfo = make(map[string]pokeapi.PokemonInfo)
 
 var usage string
 func generateUsage() string {

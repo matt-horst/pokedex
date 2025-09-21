@@ -104,6 +104,13 @@ func GetPokemonList(name string) ([]string, error) {
 type PokemonInfo struct {
 	Name string
 	BaseExperience int
+	Height int
+	Weight int
+	Stats []struct {
+		Name string
+		Val int
+	}
+	Types []string
 }
 
 func GetPokemon(name string) (PokemonInfo, error) {
@@ -128,6 +135,19 @@ func GetPokemon(name string) (PokemonInfo, error) {
 	data := struct {
 		Name string
 		Base_experience int
+		Height int
+		Weight int
+		Types []struct {
+			Type struct {
+				Name string
+			}
+		}
+		Stats []struct {
+			Base_stat int
+			Stat struct {
+				Name string
+			}
+		}
 	} {}
 
 	err := json.Unmarshal(body, &data)
@@ -135,5 +155,20 @@ func GetPokemon(name string) (PokemonInfo, error) {
 		return PokemonInfo{}, err	
 	}
 
-	return PokemonInfo{Name: data.Name, BaseExperience: data.Base_experience}, nil
+	info := PokemonInfo{
+		Name: data.Name,
+		BaseExperience: data.Base_experience,
+		Height: data.Height,
+		Weight: data.Weight,
+	}
+
+	for _, s := range data.Stats {
+		info.Stats = append(info.Stats, struct{Name string; Val int}{Name: s.Stat.Name, Val: s.Base_stat})
+	}
+
+	for _, t := range data.Types {
+		info.Types = append(info.Types, t.Type.Name)
+	}
+
+	return info, nil
 }
