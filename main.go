@@ -3,9 +3,11 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
+
 	"github.com/matt-horst/pokeapi"
 )
 
@@ -90,12 +92,23 @@ func commandExplore(_ *config, params []string) error {
 func commandCatch(_ *config, params []string) error {
 	name := params[0]
 
-	_, err := pokeapi.GetPokemon(name)
+	p, err := pokeapi.GetPokemon(name)
 	if err != nil {
 		return err
 	}
 
+
 	fmt.Printf("Throwing a Pokeball at %v...\n", name)
+
+	rng := rand.New(rand.NewSource(int64(time.Now().UnixNano())))
+	v := rng.Intn(400)
+	if v > p.BaseExperience {
+		// Catch
+		fmt.Printf("%v was caught!\n", name)
+	} else {
+		// Miss
+		fmt.Printf("%v escaped!\n", name)
+	}
 
 	return nil
 }
@@ -120,6 +133,11 @@ var registry = map[string]cliCommand{
 		name: "explore",
 		description: "Displays a list of pokemon at the given location",
 		callback: commandExplore,
+	},
+	"catch": {
+		name: "catch",
+		description: "Attempts to catch a pokemon",
+		callback: commandCatch,
 	},
 	"exit": {
 		name: "exit",

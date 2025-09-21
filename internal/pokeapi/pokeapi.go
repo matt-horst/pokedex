@@ -100,3 +100,40 @@ func GetPokemonList(name string) ([]string, error) {
 
 	return pokemon, nil
 }
+
+type PokemonInfo struct {
+	Name string
+	BaseExperience int
+}
+
+func GetPokemon(name string) (PokemonInfo, error) {
+	url := fmt.Sprintf("https://pokeapi.co/api/v2/pokemon/%v", name)
+
+	body, ok := cache.Get(url)
+	if !ok {
+		res, err := http.Get(url)
+		if err != nil {
+			return PokemonInfo{}, err
+		}
+
+		body, err = io.ReadAll(res.Body)
+		defer res.Body.Close()
+		if err != nil {
+			return PokemonInfo{}, err
+		}
+
+		cache.Add(url, body)
+	}
+
+	data := struct {
+		Name string
+		Base_experience int
+	} {}
+
+	err := json.Unmarshal(body, &data)
+	if err != nil {
+		return PokemonInfo{}, err	
+	}
+
+	return PokemonInfo{Name: data.Name, BaseExperience: data.Base_experience}, nil
+}
