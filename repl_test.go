@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"testing"
+	"fmt"
+)
 
 func TestCleanInput(t *testing.T) {
 	cases := []struct {
@@ -21,22 +24,24 @@ func TestCleanInput(t *testing.T) {
 		},
 	}
 
-	for _, c := range cases {
-		actual := cleanInput(c.input)
+	for i, c := range cases {
+		t.Run(fmt.Sprintf("Test case %v", i), func(t *testing.T) {
+			actual := cleanInput(c.input)
 
-		if len(actual) != len(c.expected) {
-			t.Errorf("actaul: %v !=  expected: %v", actual, c.expected)
-			t.FailNow()
-		}
-
-		for i := range actual {
-			actualWord := actual[i]
-			expectedWord := c.expected[i]
-
-			if actualWord != expectedWord {
+			if len(actual) != len(c.expected) {
 				t.Errorf("actaul: %v !=  expected: %v", actual, c.expected)
-				t.FailNow()
+				return
 			}
-		}
+
+			for i := range actual {
+				actualWord := actual[i]
+				expectedWord := c.expected[i]
+
+				if actualWord != expectedWord {
+					t.Errorf("actaul: %v !=  expected: %v", actual, c.expected)
+					return
+				}
+			}
+		})
 	}
 }

@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"internal/pokeapi"
+	"github.com/matt-horst/pokeapi"
+	"github.com/matt-horst/pokecache"
 )
 
 type cliCommand struct {
@@ -92,6 +93,8 @@ var registry = map[string]cliCommand{
 		callback: commandExit,
 	},
 }
+
+var cache pokecache.Cache
 
 var usage string
 func generateUsage() string {
