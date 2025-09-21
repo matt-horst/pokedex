@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"errors"
 	"github.com/matt-horst/pokeapi"
 )
 
@@ -30,6 +31,7 @@ func cleanInput(text string) []string {
 func commandHelp(_ *config, _ []string) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Print(usage)
+
 	return nil
 }
 
@@ -43,7 +45,7 @@ func commandExit(_ *config, _ []string) error {
 func commandMap(config *config, _ []string) error {
 	list, err := pokeapi.GetLocationsList(config.Next)
 	if err != nil {
-		return err
+		return errors.New("failed to retrieve map information")
 	}
 
 	for _, name := range list.Locations {
@@ -59,7 +61,7 @@ func commandMap(config *config, _ []string) error {
 func commandMapb(config *config, _ []string) error {
 	list, err := pokeapi.GetLocationsList(config.Previous)
 	if err != nil {
-		return err
+		return errors.New("failed to retrieve map information")
 	}
 
 	for _, name := range list.Locations {
@@ -77,7 +79,7 @@ func commandExplore(_ *config, params []string) error {
 
 	pokemon, err := pokeapi.GetPokemonList(name)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to retrieve location information for `%v`", name)
 	}
 
 	fmt.Printf("Exploring %v...\n", name)
@@ -93,7 +95,7 @@ func commandCatch(_ *config, params []string) error {
 
 	p, err := pokeapi.GetPokemon(name)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to retrieve pokemon information for `%v`", name)
 	}
 
 
@@ -205,7 +207,7 @@ func main() {
 		if cmd, ok := registry[cleanInput[0]]; ok {
 			err := cmd.callback(&config, cleanInput[1:])
 			if err != nil {
-				fmt.Println(err)
+				fmt.Printf("Error: %v\n", err)
 			} 
 		} else {
 			fmt.Println("Unknown command")
