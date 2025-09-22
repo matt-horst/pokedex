@@ -141,6 +141,16 @@ func commandInspect(_ *config, params []string) error {
 	return nil
 }
 
+func commandPokedex(_ *config, _ []string) error {
+	fmt.Println("Your Pokedex:")
+
+	for p := range pokedex {
+		fmt.Printf(" - %v\n", p)
+	}
+
+	return nil
+}
+
 var registry = map[string]cliCommand{
 	"help": {
 		name: "help",
@@ -171,6 +181,11 @@ var registry = map[string]cliCommand{
 		name: "inspect",
 		description: "Displays information about pokemon in pokedex",
 		callback: commandInspect,
+	},
+	"pokedex": {
+		name: "pokedex",
+		description: "Lists all known pokemon in your pokedex",
+		callback: commandPokedex,
 	},
 	"exit": {
 		name: "exit",
